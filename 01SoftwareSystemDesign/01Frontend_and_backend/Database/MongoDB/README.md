@@ -1,0 +1,1 @@
+古董博客：[Windows 下 MongoDB 6 详细安装指北](https://blog.csdn.net/qq_55535816/article/details/128341733)

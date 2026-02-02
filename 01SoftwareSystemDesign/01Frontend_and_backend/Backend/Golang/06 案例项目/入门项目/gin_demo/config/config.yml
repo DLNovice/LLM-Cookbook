@@ -1,0 +1,8 @@
+app:
+  name: CurrencyExchangeApp
+  port: :3005
+
+database:
+  dsn: user:123456@tcp(127.0.0.1:3309)/gin_db?charset=utf8mb4&parseTime=True&loc=Local
+  MaxIdleConns: 11
+  MaxOpenCons: 114

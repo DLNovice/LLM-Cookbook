@@ -1,0 +1,1 @@
+知识还停留在Django3（[Django 笔记总汇](https://blog.csdn.net/qq_55535816/article/details/123241796)），待补充（优先级较低）

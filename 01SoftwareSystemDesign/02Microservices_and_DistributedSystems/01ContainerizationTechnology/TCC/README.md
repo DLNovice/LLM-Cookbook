@@ -1,0 +1,1 @@
+参考教程：[从零到一手写实现TCC分布式事务框架](https://www.bilibili.com/video/BV1ku4y1Q7GN)
