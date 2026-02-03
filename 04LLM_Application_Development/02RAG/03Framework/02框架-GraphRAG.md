@@ -83,14 +83,14 @@ GraphRAG能提高查询质量因为LLM处理了docs并提炼其中的关系。�
 
 1）安装 Java 环境
 
-```
+```bash
 sudo apt update
 sudo apt install openjdk-17-jdk -y
 ```
 
 2）添加 Neo4j 官方仓库
 
-```
+```bash
 # 下载并安装 GPG 密钥
 wget -O - https://debian.neo4j.com/neotechnology.gpg.key | sudo gpg --dearmor -o /etc/apt/keyrings/neo4j.gpg
 
@@ -102,13 +102,13 @@ sudo apt update
 
 3）安装 Neo4j
 
-```
+```bash
 sudo apt install neo4j -y
 ```
 
 4）启动与管理
 
-```
+```bash
 sudo systemctl start neo4j    # 启动服务
 sudo systemctl enable neo4j   # 设置开机自启
 sudo systemctl status neo4j   # 查看运行状态
@@ -116,7 +116,7 @@ sudo systemctl status neo4j   # 查看运行状态
 
 示例日志：
 
-```
+```bash
 $ sudo systemctl status neo4j
 ● neo4j.service - Neo4j Graph Database
      Loaded: loaded (/usr/lib/systemd/system/neo4j.service; enabled; preset: enabled)
@@ -136,7 +136,7 @@ $ neo4j --version
 
 5）修改密码：默认用户名是 `neo4j`，默认初始密码是：`neo4j`，这里密码改为`password123`方便后续测试
 
-```
+```bash
 cypher-shell -u neo4j
 ```
 
@@ -146,7 +146,7 @@ cypher-shell -u neo4j
 
 1）找你的[neo4j对应的apoc版本](https://neo4j.com/docs/apoc/current/installation/)，下载后并放入neo4j对应目录下
 
-```
+```bash
 sudo wget \
 https://github.com/neo4j/apoc/releases/download/2025.12.1/apoc-2025.12.1-core.jar \
 -O /var/lib/neo4j/plugins/apoc.jar
@@ -154,20 +154,20 @@ https://github.com/neo4j/apoc/releases/download/2025.12.1/apoc-2025.12.1-core.ja
 
 2）修改 Neo4j 配置：`sudo vim /etc/neo4j/neo4j.conf`，添加如下两行
 
-```
+```bash
 dbms.security.procedures.unrestricted=apoc.*
 dbms.security.procedures.allowlist=apoc.*
 ```
 
 3）重启 neo4j
 
-```
+```bash
 sudo systemctl restart neo4j
 ```
 
 4）进入neo4j测试：在安装之前，如下程序输出为空
 
-```
+```sql
 SHOW PROCEDURES
 YIELD name
 WHERE name STARTS WITH 'apoc'
@@ -178,7 +178,7 @@ RETURN name;
 
 #### 接入Python测试
 
-```
+```bash
 # 1. 卸载可能冲突的库
 pip uninstall -y numpy pandas neo4j
 
@@ -190,7 +190,7 @@ pip cache purge
 pip install "numpy<2.0" "pandas>=2.2.2" "langchain-neo4j"
 ```
 
-```
+```python
 from langchain_neo4j import Neo4jGraph
 
 graph = Neo4jGraph(
@@ -204,12 +204,339 @@ print(graph.schema)
 
 示例输出：
 
-```
+```bash
 $ python main.py 
 Node properties:
 
 Relationship properties:
 
 The relationships:
+```
+
+
+
+### 2、导入数据
+
+王 Neo4j 中插入一个小型医疗知识图谱：
+
+```sql
+CREATE (d1:Disease {name: "Diabetes"})
+CREATE (d2:Disease {name: "Hypertension"})
+CREATE (drug1:Drug {name: "Metformin"})
+CREATE (drug2:Drug {name: "Insulin"})
+CREATE (drug3:Drug {name: "Lisinopril"})
+
+CREATE (drug1)-[:TREATS]->(d1)
+CREATE (drug2)-[:TREATS]->(d1)
+CREATE (drug3)-[:TREATS]->(d2)
+```
+
+示例效果：
+
+![image-20260203090558290](./assets/image-20260203090558290.png)
+
+验证：
+
+```sql
+MATCH (d:Disease)<-[:TREATS]-(drug:Drug)
+RETURN d.name, collect(drug.name);
+```
+
+示例输出：
+
+```bash
+╒══════════════╤════════════════════════╕
+│d.name        │collect(drug.name)      │
+╞══════════════╪════════════════════════╡
+│"Diabetes"    │["Metformin", "Insulin"]│
+├──────────────┼────────────────────────┤
+│"Hypertension"│["Lisinopril"]          │
+└──────────────┴────────────────────────┘
+```
+
+
+
+### 3、使用 LangChain 的 Cypher Chain
+
+LangChain 有一个 CypherChain，可以将自然语言问题转化为 Cypher 查询：
+
+```bash
+# 存在很多依赖冲突
+pip uninstall -y \
+  langchain \
+  langchain-core \
+  langchain-openai \
+  langchain-community \
+  langchain-neo4j
+
+pip install \
+  langchain==0.3.8 \
+  langchain-core \
+  langchain-community \
+  langchain-openai \
+  langchain-neo4j
+```
+
+示例代码：LLM 会将自然语言问题翻译成 Cypher 查询，在 Neo4j 上执行，然后返回人类可读的答案。
+
+```python
+from langchain_openai import ChatOpenAI
+from langchain.chains import GraphCypherQAChain
+from langchain_community.graphs import Neo4jGraph  # 注意此引用
+
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+llm = ChatOpenAI(
+    model=os.getenv("MODEL_NAME"),
+    temperature=0.5,
+    api_key=os.getenv("OPENROUTER_API_KEY"),
+    base_url=os.getenv("BASE_URL")
+)
+
+graph = Neo4jGraph(
+    url="bolt://0.0.0.0:7687",
+    username="neo4j",
+    password="password123"
+)
+
+print(graph.schema)
+
+cypher_chain = GraphCypherQAChain.from_llm(
+    llm=llm,
+    graph=graph,
+    verbose=True,
+    allow_dangerous_requests=True  # 👈 必须加
+)
+
+response = cypher_chain.run("Which drugs treat Diabetes?")
+print(response)
+
+```
+
+示例输出：
+
+```bash
+Node properties:
+Disease {name: STRING}
+Drug {name: STRING}
+Relationship properties:
+
+The relationships:
+(:Drug)-[:TREATS]->(:Disease)
+
+> Entering new GraphCypherQAChain chain...
+Generated Cypher:
+cypher
+MATCH (drug:Drug)-[:TREATS]->(disease:Disease)
+WHERE disease.name = "Diabetes"
+RETURN drug.name
+
+Full Context:
+[{'drug.name': 'Metformin'}, {'drug.name': 'Insulin'}]
+
+> Finished chain.
+Metformin, Insulin treat Diabetes.
+```
+
+
+
+### 4、完整 Graph + Vector 混合检索代码
+
+```bash
+conda install -c pytorch -c nvidia faiss-gpu=1.11.0
+conda install pytorch torchvision torchaudio cudatoolkit -c pytorch
+pip install -U sentence-transformers
+```
+
+示例代码：
+
+```python
+import os
+from dotenv import load_dotenv
+from typing import List
+
+from langchain_community.graphs import Neo4jGraph
+from langchain_openai import ChatOpenAI
+from langchain_community.embeddings import OllamaEmbeddings
+from langchain_community.vectorstores import FAISS
+from langchain.chains import GraphCypherQAChain
+from langchain.schema import Document
+from langchain_core.messages import HumanMessage
+
+load_dotenv()
+
+# =========================
+# 1. LLM
+# =========================
+llm = ChatOpenAI(
+    model=os.getenv("MODEL_NAME"),
+    temperature=0.3,
+    api_key=os.getenv("OPENROUTER_API_KEY"),
+    base_url=os.getenv("BASE_URL")
+)
+
+# =========================
+# 2. Neo4j Graph
+# =========================
+graph = Neo4jGraph(
+    url="bolt://localhost:7687",
+    username="neo4j",
+    password="password123"
+)
+
+print("Graph schema:")
+print(graph.schema)
+
+graph_chain = GraphCypherQAChain.from_llm(
+    llm=llm,
+    graph=graph,
+    verbose=True,
+    allow_dangerous_requests=True
+)
+
+# =========================
+# 3. Embeddings (Ollama)
+# =========================
+embeddings = OllamaEmbeddings(
+        model="qwen3-embedding:latest",
+        base_url="http://localhost:11434"
+    )
+
+texts = [
+    "Metformin is the first-line medication for type 2 diabetes.",
+    "Insulin helps regulate blood glucose levels.",
+    "Lisinopril is commonly used to treat hypertension.",
+    "High blood sugar is a defining feature of diabetes."
+]
+
+vectorstore = FAISS.from_texts(texts, embeddings)
+vector_retriever = vectorstore.as_retriever(search_kwargs={"k": 3})
+
+# =========================
+# 4. Query Normalization（关键）
+# =========================
+def normalize_question(question: str) -> str:
+    """
+    将症状/口语问题 → 图谱中的标准实体
+    """
+    mapping = {
+        "high blood sugar": "Diabetes",
+        "high glucose": "Diabetes",
+        "blood sugar": "Diabetes"
+    }
+
+    q = question.lower()
+    for k, v in mapping.items():
+        if k in q:
+            return f"What drugs treat {v}?"
+
+    return question
+
+# =========================
+# 5. Hybrid Retrieval
+# =========================
+def hybrid_retrieve(question: str) -> List[Document]:
+    docs: List[Document] = []
+
+    # Vector retrieval
+    try:
+        docs.extend(vector_retriever.invoke(question))
+    except Exception as e:
+        print("Vector retrieval failed:", e)
+
+    # Graph retrieval（用规范化问题）
+    try:
+        normalized_q = normalize_question(question)
+        graph_result = graph_chain.invoke({"query": normalized_q})
+        if graph_result and "result" in graph_result:
+            docs.append(
+                Document(
+                    page_content=f"[Graph] {graph_result['result']}"
+                )
+            )
+    except Exception as e:
+        print("Graph query failed:", e)
+
+    return docs
+
+# =========================
+# 6. Answer Synthesis
+# =========================
+FINAL_PROMPT = """You are a medical assistant.
+
+Use the context below to answer the question.
+Combine graph-based factual knowledge and semantic knowledge.
+If the graph provides no direct answer, rely on semantic knowledge.
+
+Context:
+{context}
+
+Question:
+{question}
+
+Answer:
+"""
+
+def answer_question(question: str) -> str:
+    docs = hybrid_retrieve(question)
+
+    # 去重
+    seen = set()
+    context_chunks = []
+    for d in docs:
+        if d.page_content not in seen:
+            context_chunks.append(d.page_content)
+            seen.add(d.page_content)
+
+    context = "\n".join(f"- {c}" for c in context_chunks)
+
+    response = llm.invoke(
+        [
+            HumanMessage(
+                content=FINAL_PROMPT.format(
+                    context=context,
+                    question=question
+                )
+            )
+        ]
+    )
+
+    return response.content
+
+# =========================
+# 7. Run
+# =========================
+if __name__ == "__main__":
+    query = "What drugs are commonly prescribed for high blood sugar?"
+    answer = answer_question(query)
+
+    print("\nFinal Answer:")
+    print(answer)
+
+```
+
+示例结果：
+
+```bash
+The relationships:
+(:Drug)-[:TREATS]->(:Disease)
+
+> Entering new GraphCypherQAChain chain...
+Generated Cypher:
+cypher
+MATCH (drug:Drug)-[:TREATS]->(disease:Disease)
+WHERE disease.name = 'Diabetes'
+RETURN drug.name
+
+Full Context:
+[{'drug.name': 'Metformin'}, {'drug.name': 'Insulin'}]
+
+> Finished chain.
+
+Final Answer:
+Metformin and Insulin are commonly prescribed for high blood sugar.
 ```
 

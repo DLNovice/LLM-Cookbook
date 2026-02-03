@@ -4,7 +4,11 @@
 
 
 
-概念介绍：[AI编程 Vibe Coding的原理是什么？](https://www.bilibili.com/video/BV15mMVzTEor)
+### AI Coding 参考文章
+
+> 参考：[AI编程 Vibe Coding的原理是什么？](https://www.bilibili.com/video/BV15mMVzTEor)
+
+概述：
 
 - 修改文件：diff
 - 获取IDE中相关信息：打开了什么文件等等信息
@@ -12,8 +16,6 @@
 - Prompt中写好一些模版
 
 
-
-### AI Coding 参考文章
 
 > 参考：[私域知识工程实战：如何让AI一次性写出高质量代码？](https://mp.weixin.qq.com/s/3gSg1CvX72Ib8tLpg-jSxg)
 
@@ -35,19 +37,89 @@ AI助手类似于新员工，有技术基础和学习能力，但是对团队项
 
 
 
+### 工具安装
+
+#### 1、ClaudeCode
+
+试试ClaudeCode + GLM（用Claude官方模型也行，改一下base_url等配置信息即可）：当前在linux平台下，与windows的主要区别就是配置文件位置不同
+
+- 安装ClaudeCode：
+
+  ```bash
+  npm install -g @anthropic-ai/claude-code
+  ```
+
+- 申请key并配置：编辑或新增 Claude Code 配置文件 `~/.claude/settings.json`（注意，官方一般是不推荐设置`"ANTHROPIC_DEFAULT_HAIKU_MODEL"`等参数的，但如果不配置，默认模型输出的不是glm系列，以防万一还是配了一下）
+
+  ```json
+  {
+    "env": {
+      "ANTHROPIC_AUTH_TOKEN": "yourkey here",
+      "API_TIMEOUT_MS": "3000000",
+      "ANTHROPIC_BASE_URL": "https://open.bigmodel.cn/api/anthropic",
+      "MCP_TOOL_TIMEOUT": "30000",
+      "ANTHROPIC_DEFAULT_HAIKU_MODEL": "glm-4.5-air",
+      "ANTHROPIC_DEFAULT_SONNET_MODEL": "glm-4.6",
+      "ANTHROPIC_DEFAULT_OPUS_MODEL": "glm-4.6"
+    },
+    "permissions": {
+      "defaultMode": "bypassPermissions"
+    },
+    "alwaysThinkingEnabled": false
+  }
+  ```
+
+- 新打开一个终端，输入`claude`进入ClaudeCode，输入`/model`选择`default`模型，输入`/status`验证
+
+- End：可以终端直接使用ClaudeCode，也可以VSCode安装`Claude Code for VS Code`插件，交互体验更好
+
+
+
+#### 2、Codex
+
+最近中转站的Claude系列模型管的较严，试试Codex：
+
+- 参考：[ZCF](https://zcf.ufomiao.com/zh-CN/features/codex)，跟ClaudeCode配置方法类似，一键安装、修改配置文件、安装VSCode插件
+
+- 初始化：
+
+  ```
+  # 初始化 Codex（自动检测并安装）
+  npx zcf i -s -T codex -p 302ai -k "sk-xxx"
+  ```
+
+- 修改配置：
+
+  ```
+  npx zcf i -s -T codex \
+    --api-type api_key \
+    --api-key "sk-xxx" \
+    --api-url "https://api.example.com" \
+    --api-model "gpt-5"
+  ```
+
+- VSCode安装插件，完事
+
+
+
+#### 3、Others
+
+Cursor、Trea、antigravity等，直接安装即可
+
+
+
 ### AI-native IDE
 
 例如：
 
 - [Trea](https://github.com/Trae-AI/Trae)：未开源，[已被逆向Prompt](https://github.com/x1xhlol/system-prompts-and-models-of-ai-tools/tree/main/Trae)，可参考<toolcall_guideline>、<tool_parameter_guideline>、
-- [Trea-Agent](https://www.cnblogs.com/xiaoqi/p/18971235/Trae-Agent)：无有效信息
+- [Trea-Agent](https://www.cnblogs.com/xiaoqi/p/18971235/Trae-Agent)：暂无有效信息
 - [CodeGeeX4](https://github.com/zai-org/CodeGeeX4)：开源了提示词等内容，但是未涉及用户日志等内容
 - [Cursor](https://github.com/cursor/cursor)：官方未开源架构。根据第三方的解析
   - [Cursor原理分析](https://uae6ktejd3.feishu.cn/docx/YD9vdMwydocIvvxJirWcJ3CSnif)：详细讲述了Agent架构
   - [深入解析｜Cursor编程实践经验分享](https://developer.aliyun.com/article/1668888?spm=a2c6h.24874632.expert-profile.46.30c17d13xL9Gwt)：
   - （存疑）cursor 的逻辑是，先将工程内的所有代码进行索引和向量化（Embedding），再之后你的所有提问都是基于整个工程给你答案，它会将你的提问结合整个工程的代码一起提交给 LLM
-  - [复现项目](https://github.com/topics/cursor-ai)：
-    - https://github.com/yeongpin/cursor-free-vip
+  - [复现项目](https://github.com/topics/cursor-ai)：https://github.com/yeongpin/cursor-free-vip
 
 总结：各个AI-native IDE均未开源架构，似乎只能通过Github上开源的复现项目来学习相关架构。
 

@@ -2,7 +2,7 @@
 
 TODO
 
-- [ ] 准备面经：Agent框架面经、Agent情景题、Agent面经、微调、Golang经验（买项目）
+- [ ] 准备面经：充电视频、Agent框架面经、Agent情景题、Agent面经、微调、Golang
 - [ ] 手撕算法：手撕LLM题、Hot100
 
 
@@ -163,9 +163,9 @@ TODO
   - [x] （了解了概念，未实践）掌握 hybrid retrieval 技术（稀疏+稠密），了解 ColBERT、BM25、TART 等前沿方法
   - [x] （了解了概念，未实践）了解 RAG 2.0 架构，具备构建多源异构知识集成能力者优先
   - [x] （了解了概念，未实践）Agentic RAG
-- [ ] 开发框架及实践：
+- [x] 开发框架及实践：
   - [x] （了解了概念，未实践）能基于 LangChain、LlamaIndex 构建 RAG pipeline，支持动态检索源扩展与知识版本管理
-  - [ ] GraphRAG：项目实践
+  - [x] （跑通了Demo）GraphRAG：项目实践
   - [x] （了解了概念，未实践）LightRAG框架
 
 
@@ -190,7 +190,7 @@ TODO
 
 ------
 
-### 06 其他
+### 06 Others
 
 常用：
 
