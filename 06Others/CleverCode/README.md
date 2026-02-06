@@ -1,3 +1,9 @@
+TODO：
+
+- [聊一下AI时代怎么选取信息源](https://www.bilibili.com/video/BV1xr6GB5EnH)
+
+
+
 # 焚诀
 
 日常工具：
